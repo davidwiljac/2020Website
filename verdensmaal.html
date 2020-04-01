@@ -1,0 +1,149 @@
+<!DOCTYPE HTML>
+<head>
+    <!-- META -->
+    <meta charset="utf-8">
+    <!-- CSS -->
+    <link type="text/css" rel="stylesheet" href="css/all.min.css">
+    <link type="text/css" rel="stylesheet" href="navigation.css">
+
+    <script src="navigation.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+    <script src="https://infomation-93c5.restdb.io/rest/_jsapi.js"></script>
+    <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            width: 100%;
+        }
+        th{
+            width: 33%;
+            font-size: 1.5em;
+        }
+        img{
+            width: 25%;
+            float: left;
+            margin-bottom: 0;
+        }
+        .bes{
+            width: 75%;
+            margin-bottom: 0;
+            float: left;
+        }        
+        p{
+            height: 100%;
+            margin-bottom: 0;
+        }
+    </style>
+
+</head>
+<body onload="getData()">
+    <div id="nav">
+        <div class="icon-bar">
+            <a onclick="toggleNav()"> --- </a>
+        </div>
+        <div id="side-bar" class="sidenav">
+            <a href="løb.html">Løb og poster</a>
+            <a href="program.html">Tidsplan</a>
+            <a href="verdensmaal.html">Verdensmål</a>
+        </div>
+    </div>
+    <div id="main">
+        <p id="senderStatus"></p>
+        <table onclick="updateVerdensmaal()" id="maalTable">
+            <tr>
+                <th><img src="verdensmaal_billeder/1_1.png"><div class="bes"><p>Afskaf fattigdom</p></div></th>
+                <th><img src="verdensmaal_billeder/2_1.png"><div class="bes"><p>Stop sult</p></div></th>
+                <th><img src="verdensmaal_billeder/3_1.png"><div class="bes"><p>Sundhed og trivsel</p></div></th>
+            </tr>
+            <tr>
+                <th><img src="verdensmaal_billeder/4_1.png"><div class="bes"><p>Kvalitets uddannelse</p></div></th>
+                <th><img src="verdensmaal_billeder/5_1.png"><div class="bes"><p>Ligestilling mellem kønnene</p></div></th>
+                <th><img src="verdensmaal_billeder/6_1.png"><div class="bes"><p>Rent vand og sanitet</p></div></th>
+            </tr>
+            <tr>
+                <th><img src="verdensmaal_billeder/7_1.png"><div class="bes"><p>Bæredygtig energi</p></div></th>
+                <th><img src="verdensmaal_billeder/8_1.png"><div class="bes"><p>Anstændige jobs og økonomisk vækst</p></div></th>
+                <th><img src="verdensmaal_billeder/9_1.png"><div class="bes"><p>Industri, innovation og infrastruktur</p></div></th>
+            </tr>
+            <tr>
+                <th><img src="verdensmaal_billeder/10_1.png"><div class="bes"><p>Mindre ulighed</p></div></th>
+                <th><img src="verdensmaal_billeder/11_1.png"><div class="bes"><p>Bæredygtige byer og lokalsamfund</p></div></th>
+                <th><img src="verdensmaal_billeder/12_1.png"><div class="bes"><p>Ansvarlig forbrug og produktion</p></div></th>
+            </tr>
+            <tr>
+                <th><img src="verdensmaal_billeder/13_1.png"><div class="bes"><p>Klimainsats</p></div></th>
+                <th><img src="verdensmaal_billeder/14_1.png"><div class="bes"><p>Livet i havet</p></div></th>
+                <th><img src="verdensmaal_billeder/15_1.png"><div class="bes"><p>Livet på land</p></div></th>
+            </tr>
+            <tr>
+                <th><img src="verdensmaal_billeder/16_1.png"><div class="bes"><p>Fred, retfærdighed og stærke institutioner</p></div></th>
+                <th><img src="verdensmaal_billeder/17_1.png"><div class="bes"><p>Partnerskab for handling</p></div></th>
+            </tr>
+        </table>
+    </div>
+</body>
+
+<script>
+    var fullData;
+    var index = "0";
+    var type = "løb";
+    var førsteTryk = false;
+    var states = [false,false,false,false,false,true,false,false,true,false,false,false,false,false,false,false,false];
+
+    var table = document.getElementById("maalTable");
+    if (table != null) {
+        for (var i = 0; i < table.rows.length; i++) {
+            for (var j = 0; j < table.rows[i].cells.length; j++)
+                table.rows[i].cells[j].onclick = function () {
+                    updateVerdensmaal(this);
+                };
+        }
+    }
+
+    function getData(){
+        var db = new restdb("5cf540711cdaca4633876cd3");
+        var query = {}; // get all records
+        var hints = {"$max": 10, "$orderby": {"_id": -1}}; // top ten, sort by creation id in descending order
+        db.test.find(query, hints, function(err, res){
+            if (!err){
+                fullData = res[0];
+                states = fullData.verdensmaal;
+                updateTable();
+            }
+        });
+    }
+
+    function sendData(){
+        var p = document.getElementById("senderStatus");
+        p.innerHTML = "sender data, luk ikke siden";
+        fullData.verdensmaal = states;
+        // Form fields, see IDs above
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', 'https://infomation-93c5.restdb.io/rest/test/5cf55c981efbe954000031db');
+        xhr.setRequestHeader('Content-type', 'application/json');
+        xhr.setRequestHeader("x-apikey", "5cf540711cdaca4633876cd3");
+        xhr.send(JSON.stringify(fullData)) // Make sure to stringify
+        p.innerHTML = "";
+    }
+
+    function updateTable(){
+        var table = document.getElementById("maalTable");
+        var num = 0;
+        for(var i = 0; i< table.rows.length; i++){
+            for(var u = 0; u < table.rows[i].cells.length; u++){
+                table.rows[i].cells[u].children[0].setAttribute("src", "verdensmaal_billeder/"+(num+1)+"_"+(states[num]+1)+".png");
+                num++;
+            }
+        }
+    }
+
+    function updateVerdensmaal(tableCell){
+        var index = tableCell.parentElement.rowIndex*3+tableCell.cellIndex;
+        if(states[index]){states[index] = false;
+        }else{states[index] = true;}
+        sendData();
+        updateTable();
+    }
+
+</script>
