@@ -1,1 +1,1 @@
-<script>window.location = "unavngivet-1.html";</script>
+<script>console.log("hej");</script>
