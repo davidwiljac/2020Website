@@ -44,7 +44,7 @@
         </div>
         <div id="side-bar" class="sidenav">
             <a href="løb.html">Løb og poster</a>
-            <a href="program.html">Tidsplan</a>
+            <a href="index.html">Tidsplan</a>
             <a href="verdensmaal.html">Verdensmål</a>
         </div>
     </div>
@@ -141,7 +141,7 @@
     function updateVerdensmaal(tableCell){
         var index = tableCell.parentElement.rowIndex*3+tableCell.cellIndex;
         if(states[index]){states[index] = false;
-        }else{states[index] = true;}
+                         }else{states[index] = true;}
         sendData();
         updateTable();
     }
