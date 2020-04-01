@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html style="width: 100%; height: 100%">
+
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="description" content="En interaktiv guide til at komme godt i gang med Brackets.">
+        <link rel="stylesheet" href="main.css">
+        <link rel="stylesheet" href="navigation.css">
+
+        <script src="navigation.js"></script>
+        <script src="https://infomation-93c5.restdb.io/rest/_jsapi.js"></script>
+        <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+
+        <style>
+            .tidsbox{
+                height: 1.2em;
+                width: 100%;
+            }
+            #tidsplan div:nth-child(odd){background-color: #f2f2f2;}
+            #tidsplan div:hover {background-color: #ddd;}
+
+        </style>
+    </head>
+    <body onload="setup()">
+        <div id="nav">
+            <div class="icon-bar">
+                <a onclick="toggleNav()"> --- </a>
+            </div>
+            <div id="side-bar" class="sidenav">
+                <a href="løb.html">Løb og poster</a>
+                <a href="program.html">Tidsplan</a>
+            </div>
+        </div>
+        <div id="main">
+            <select id="unit" style="display: inherit" onchange="changeUnit()">
+                <option>Bæver</option>
+                <option>Ulve</option>
+                <option>Junior</option>
+                <option>Storspejder</option>
+                <option>Senior/Rover</option>
+            </select>
+            <select id="day" style="display: inherit" onchange="changeDay()">
+                <option>dag 1</option>
+                <option>dag 2</option>
+                <option>dag 3</option>
+                <option>dag 4</option>
+                <option>dag 5</option>
+                <option>dag 6</option>
+                <option>dag 7</option>
+                <option>dag 8</option>
+            </select>
+            <div style="display: inline-block; float: left">
+                <button style="float: left;" onclick="setState(1)">Lav programpunkter</button>
+                <button style="float: left;" onclick="setState(2)">Slet programpunkter</button>
+                <button style="float: left;" onclick="setState(3)">Rediger programpunkter</button>
+            </div>
+            <div style="display: inline-block; float: left; clear: both; margin-right: 10px">
+                <div class="tidsbox">6:00</div>
+                <div class="tidsbox">6:30</div>
+                <div class="tidsbox">7:00</div>
+                <div class="tidsbox">7:30</div>
+                <div class="tidsbox">8:00</div>
+                <div class="tidsbox">8:30</div>
+                <div class="tidsbox">9:00</div>
+                <div class="tidsbox">9:30</div>
+                <div class="tidsbox">10:00</div>
+                <div class="tidsbox">10:30</div>
+                <div class="tidsbox">11:00</div>
+                <div class="tidsbox">11:30</div>
+                <div class="tidsbox">12:00</div>
+                <div class="tidsbox">12:30</div>
+                <div class="tidsbox">13:00</div>
+                <div class="tidsbox">13:30</div>
+                <div class="tidsbox">14:00</div>
+                <div class="tidsbox">14:30</div>
+                <div class="tidsbox">15:00</div>
+                <div class="tidsbox">15:30</div>
+                <div class="tidsbox">16:00</div>
+                <div class="tidsbox">16:30</div>
+                <div class="tidsbox">17:00</div>
+                <div class="tidsbox">17:30</div>
+                <div class="tidsbox">18:00</div>
+                <div class="tidsbox">18:30</div>
+                <div class="tidsbox">19:00</div>
+                <div class="tidsbox">19:30</div>
+                <div class="tidsbox">20:00</div>
+                <div class="tidsbox">20:30</div>
+                <div class="tidsbox">21:00</div>
+                <div class="tidsbox">21:30</div>
+                <div class="tidsbox">22:00</div>
+                <div class="tidsbox">22:30</div>
+                <div class="tidsbox">23:00</div>
+            </div>
+            <div id="tidsplan" style="display: inline-block; float: left; width: 50%">
+            </div>
+
+            <div id="redigering" style="position: fixed; right: 2em; top: 2em; visibility: hidden">
+                <input type="text" placeholder="Programmets navn" id="navn">
+                <div>
+                    <p style="float: left; margin-right: 2em; margin-top: auto">Farve:</p>
+                    <select style="float: right; margin-top: auto;" id="farve">
+                        <option style="background-color: red">Rød</option>
+                        <option style="background-color: salmon">Laks</option>
+                        <option style="background-color: gold">Guld</option>
+                        <option style="background-color: orange">Orange</option>
+                        <option style="background-color: yellow">Gul</option>
+                        <option style="background-color: khaki">Khaki</option>
+                        <option style="background-color: green">Grøn</option>
+                        <option style="background-color: lime">Lime</option>
+                        <option style="background-color: cyan">Cyan</option>
+                        <option style="background-color: turquoise">Tyrkis</option>
+                        <option style="background-color: blue">Blå</option>
+                        <option style="background-color: navy">Navy</option>
+                        <option style="background-color: pink">Pink</option>
+                        <option style="background-color: grey">Grå</option>
+                        <option style="background-color: cornsilk">Sand</option>
+
+                    </select>
+                </div>
+            </div>
+        </div>
+    </body>
+
+    <script>
+        var program = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]];
+        var state;
+        var mouseDown = 0;
+        var colIndex;
+        var col = ["#ff0000", "#fa8072", "#ffd700", "#ffa500", "#ffff00", "#F0E68C", "#008000", "#00FF00", "#00FFFF", "#40E0D0", "#0000FF", "#000080", "#FFC0CB", "#808080", "#FFF8DC"];
+
+        var day = 0;
+        var unitIndex = 0;
+        document.body.onmousedown = function() { 
+            ++mouseDown;
+        }
+        document.body.onmouseup = function() {
+            --mouseDown;
+        }
+
+        function setup(){
+            document.getElementById("day").selectedIndex = 0;
+            document.getElementById("unit").selectedIndex = 0;
+            getData();
+            for(var i = 0; i < 35; i++){
+                var tidsbox = document.createElement("div");
+                tidsbox.className = "tidsbox";
+                tidsbox.id = i;
+                tidsbox.addEventListener("mouseenter",click);
+                tidsbox.addEventListener("mousedown", firstClick);
+                tidsbox.addEventListener("click",rediger);
+                if(program[i][0] != undefined){
+                    if(i == 0){
+                        tidsbox.innerHTML = program[0][0];
+                    }
+                    else if(program[i][0] != program[i-1][0]){
+                        tidsbox.innerHTML = program[i][0];
+                    }
+                }
+                tidsbox.style.backgroundColor = col[program[i][colIndex]];
+
+                document.getElementById("tidsplan").appendChild(tidsbox);
+            }
+        }
+
+        function update(){
+            sendData();
+            for(var i = 0; i < 35; i++){
+                var tidsbox = document.getElementById(i);
+
+                try {
+                    if(i == 0 && program[i][0] == undefined){
+                        tidsbox.innerHTML = "";
+                        tidsbox.style.backgroundColor = "";   
+                    }
+                    else if(i == 0 && program[i][0] != undefined){
+                        tidsbox.innerHTML = program[0][0];
+                        tidsbox.style.backgroundColor = col[program[0][1]];
+                    }else if((program[i][0] != program[i-1][0] || program[i][1] != program[i-1][1]) && program[i][0] != undefined){
+                        tidsbox.innerHTML = program[i][0];
+                        tidsbox.style.backgroundColor = col[program[i][1]];
+                    }else{
+                        tidsbox.innerHTML = "";
+                        tidsbox.style.backgroundColor = "";
+                    }
+                } catch (e) {
+                    //Catch Statement
+                }
+                tidsbox.style.backgroundColor = col[program[i][1]];
+            }
+        }
+
+        var blokke= [];
+        function setState(stat){
+            if(stat == 1){
+                state = "lav";
+                document.getElementById("redigering").style.visibility = "hidden";
+                removeBorder();
+            }else if(stat == 2){
+                state = "slet";
+                document.getElementById("redigering").style.visibility = "hidden";
+                removeBorder();
+            }else if(stat == 3){
+                state = "rediger";
+                document.getElementById("redigering").style.visibility = "visible";
+
+                var preBlokName = "";
+                var preBlokCol = "";
+                blokke = [];
+                for(var i = 0; i < program.length; i++){
+                    if(program[i][0] != preBlokName || program[i][1] != preBlokCol)
+                    {
+                        if(blokke.length != 0){
+                            blokke[blokke.length-1][2] = i;
+                        }
+                        blokke.push([program[i][0],i,""]);
+                    }
+                    preBlokName = program[i][0];
+                    preBlokCol = program[i][1];
+                }
+                var bloklength = blokke.length;
+                for(var i = 0; i < bloklength; i++){
+                    bloklength = blokke.length;
+                    if(blokke[i][0] == undefined){
+                        blokke.splice(i,1);
+                    }
+                }
+            }
+        }
+
+        function firstClick(event){
+            colIndex = Math.floor(Math.random()*col.length);
+            if(state == "lav"){
+                lav(event);
+            }
+            if(state == "slet"){
+                slet(event);
+            }
+        }
+
+        function click(event){
+            if(mouseDown){
+                if(state == "lav"){
+                    lav(event);
+                }
+                if(state == "slet"){
+                    slet(event);
+                }
+            }
+        }
+
+        function lav(event){
+            if(program[event.target.id].length == 0){
+                event.target.style.backgroundColor = col[colIndex];
+                program[event.target.id] = ["Nyt programpunkt", colIndex];
+            }
+            program[event.target.id][1] = colIndex;
+            update();
+        }
+
+        function slet(event){
+            program[event.target.id] = [];
+            event.target.innerHTML = "";
+            console.log(program)
+            update();
+        }
+
+        var selBlok;
+        function rediger(event){
+            if(state == "rediger"){
+                removeBorder();
+                for(var i = 0; i < blokke.length; i++){
+                    if(event.target.id >= blokke[i][1] && event.target.id < blokke[i][2] && event.target.innerHTML != undefined){
+                        selBlok = blokke[i];
+
+                        var elementStyle = document.getElementById(selBlok[1]).style;
+                        elementStyle.borderTopWidth = "5px";
+                        elementStyle.borderTopColor = "black";
+                        elementStyle.borderTopStyle = "solid";
+
+                        var elementStyle = document.getElementById(selBlok[2]-1).style;
+                        elementStyle.borderBottomWidth = "5px";
+                        elementStyle.borderBottomColor = "black";
+                        elementStyle.borderBottomStyle = "solid";
+
+                        for(var i = selBlok[1]; i < selBlok[2]; i++){
+                            var elementStyle = document.getElementById(i).style;
+                            elementStyle.borderLeftWidth = "5px";
+                            elementStyle.borderLeftColor = "black";
+                            elementStyle.borderLeftStyle = "solid";
+
+                            elementStyle.borderRightWidth = "5px";
+                            elementStyle.borderRightColor = "black";
+                            elementStyle.borderRightStyle = "solid";
+                        }
+                    }
+                }
+                document.getElementById("navn").value = selBlok[0];
+                document.getElementById("farve").selectedIndex = program[selBlok[1]][1];
+                document.getElementById("farve").style.backgroundColor = col[document.getElementById("farve").selectedIndex];
+            }
+        }
+
+        document.getElementById("navn").addEventListener("change", changeName);
+        function changeName(){
+            for(var i = selBlok[1]; i < selBlok[2]; i++){
+                program[i][0] = document.getElementById("navn").value;
+                update();
+            }
+        }
+
+        document.getElementById("farve").addEventListener("change", changeCol);
+        function changeCol(){
+            for(var i = selBlok[1]; i < selBlok[2]; i++){
+                program[i][1] = document.getElementById("farve").selectedIndex;
+            }
+            setState(3);
+            update();
+        }
+
+        function removeBorder(){
+            for(var i = 0; i < program.length; i++){
+                document.getElementById(i).style.border = "none";
+                document.getElementById(i).style.margin = "none";
+            }
+        }
+
+        function changeDay(){
+            day = document.getElementById("day").selectedIndex;
+            getData();
+        }
+
+        function changeUnit(){
+            unitIndex = document.getElementById("unit").selectedIndex;
+            getData();
+        }
+
+        var fullData;
+        function getData(){
+            var db = new restdb("5cf540711cdaca4633876cd3");
+            var query = {}; // get all records
+            var hints = {"$max": 10, "$orderby": {"_id": -1}}; // top ten, sort by creation id in descending order
+            db.test.find(query, hints, function(err, res){
+                if (!err){
+                    fullData = res[0];
+                    program = fullData.program[day][unitIndex];
+                    update();
+                }
+            });
+        }
+
+        function sendData(){
+            // Form fields, see IDs above
+            const xhr = new XMLHttpRequest()
+            xhr.open('POST', 'https://infomation-93c5.restdb.io/rest/test/5cf55c981efbe954000031db');
+            xhr.setRequestHeader('Content-type', 'application/json');
+            xhr.setRequestHeader("x-apikey", "5cf540711cdaca4633876cd3");
+            xhr.send(JSON.stringify(fullData)) // Make sure to stringify
+        }
+
+    </script>
+</html>
