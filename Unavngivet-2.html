@@ -1,0 +1,212 @@
+<!DOCTYPE HTML>
+<head>
+    <!-- META -->
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <!-- CSS -->
+    <link type="text/css" rel="stylesheet" href="css/all.min.css">
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+    <script src="https://infomation-93c5.restdb.io/rest/_jsapi.js"></script>
+    <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+
+    <style>
+        p{
+            margin: 0px;
+            border-style: solid;
+        }
+
+        textarea{
+            width: 100%;
+            font-size: 1.5em;
+            resize: none;
+        }
+
+        .løb{
+            font-weight: bold;
+            font-size: 2em;
+        }
+
+        .post{
+            text-indent: 1em;
+            font-size: 1.5em;
+        }
+    </style>
+
+</head>
+<body>
+    <div style="float: left; width: 45%">
+        <button style="font-size: 1.5em" onclick="tilføjLøb()">Tilføj løb</button>
+        <button style="font-size: 1.5em" onclick="tilføjPost()">Tiføj post</button>
+        <div id="løb"></div>
+    </div>
+    <div style="float: right; width: 45%; height: 100%">
+        <p id="id" style="border: none; height: 1em"></p>
+        <textarea type="text" style="height: 1.7em;"id="navn"></textarea>
+        <textarea type="text" rows="10" id="beskrivelse"></textarea>
+        <button style="width: 33%; font-size: 3em; text-align: center" onclick="nyBes()">Gem</button>
+        <button style="font-size: 3em; width: 33%" onclick="slet()">Slet</button>
+    </div>
+</body>
+
+<script>
+    var fullData;
+    var index = "0";
+    var type = "løb";
+    var førsteTryk = false;
+
+    window.onload = function() {
+        getData();
+    }
+
+    window.onmessage = (event) => {
+        fullData = event.data;
+        loadEvent();
+    }
+
+    function getData(){
+        var db = new restdb("5cf540711cdaca4633876cd3");
+        var query = {}; // get all records
+        var hints = {"$max": 10, "$orderby": {"_id": -1}}; // top ten, sort by creation id in descending order
+        db.test.find(query, hints, function(err, res){
+            if (!err){
+                fullData = res[0];
+                loadEvent();
+            }
+        });
+    }
+
+    function sendData(){
+        // Form fields, see IDs above
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', 'https://infomation-93c5.restdb.io/rest/test/5cf55c981efbe954000031db');
+        xhr.setRequestHeader('Content-type', 'application/json');
+        xhr.setRequestHeader("x-apikey", "5cf540711cdaca4633876cd3");
+        xhr.send(JSON.stringify(fullData)) // Make sure to stringify
+    }
+
+    function loadEvent(){
+        var løbDiv = document.getElementById("løb");
+        løbDiv.innerHTML = "";
+        for(var i = 0; i < fullData.poster.length; i++){
+            var løb = document.createElement("p");
+            løb.innerHTML = fullData.poster[i].name;
+            løb.className = "løb";
+            løb.setAttribute("data-type", "løb");
+            løb.setAttribute("data-index", i);
+            løb.addEventListener("click", function(){
+                nyBes();
+            });
+            løb.addEventListener("click", function(){
+                postData(this.getAttribute("data-type"), this.getAttribute("data-index"));
+            });
+
+            løbDiv.append(løb);
+            for(var u = 0; u < fullData.poster[i].poster.length; u++){
+                var post = document.createElement("p");
+                post.innerHTML = fullData.poster[i].poster[u][0];
+                post.className = "post";
+                post.setAttribute("data-type", "post");
+                post.setAttribute("data-index", i + ","+ u);
+                post.addEventListener("click", function(){
+                    nyBes();
+                });
+                post.addEventListener("click", function(){
+                    postData(this.getAttribute("data-type"), this.getAttribute("data-index"));
+                });
+                løbDiv.append(post);
+            }    
+        }
+    }
+
+    function postData(type1, index1){
+        var textArea = document.getElementById("beskrivelse");
+        type = type1;
+        index = index1;
+        if(type == "løb"){
+            $("#beskrivelse").val(fullData.poster[index1].bes);
+            $("#navn").val(fullData.poster[index1].name);
+            document.getElementById("id").innerHTML = "";
+        }else if(type == "post"){
+            var postIndex = index1.split(",");
+            $("#beskrivelse").val(fullData.poster[postIndex[0]].poster[postIndex[1]][2]);
+            $("#navn").val(fullData.poster[postIndex[0]].poster[postIndex[1]][0]);
+            document.getElementById("id").innerHTML = "Postens id er " + fullData.poster[postIndex[0]].poster[postIndex[1]][1];
+        }
+    }
+
+    function nyBes(){
+        var text = $("#beskrivelse").val();
+        var navn = $("#navn").val();
+        if(førsteTryk){
+            if(type == "løb"){
+                fullData.poster[index].bes = text;
+                fullData.poster[index].name = navn;
+            } else if(type == "post"){
+                var postIndex = index.split(",");
+                fullData.poster[postIndex[0]].poster[postIndex[1]][2] = text;
+                fullData.poster[postIndex[0]].poster[postIndex[1]][0] = navn;
+            }
+        }else{
+            førsteTryk = true;
+        }
+        loadEvent();
+        sendData();
+    }
+
+    function tilføjLøb(){
+        var navn = "Løb " + (fullData.poster.length+1);
+        var løb = new Object;
+        løb.name = navn;
+        løb.bes = "";
+        løb.poster = [];
+        fullData.poster.push(løb);
+        sendData();
+        loadEvent();
+    }
+
+    function tilføjPost(){        
+        var postIndex = index.split(",");
+
+        var navn = "Post " + (fullData.poster[postIndex[0]].poster.length + 1);
+        var id = genID();
+
+        var post = [navn, id, ""];
+
+        fullData.poster[postIndex[0]].poster.push(post);
+        sendData();
+        loadEvent();
+    }
+
+    function genID(){
+        var abc = "qwertyuiopåasdfghjklæøzxcvbnm";
+        var id = "";
+        for(var i = 0; i < 4; i++){
+            var tal = Math.floor(Math.random() * abc.length);
+            id += abc[tal];
+        }
+
+        for(var i = 0; i < fullData.poster.length; i++){
+            for(var u = 0; u < fullData.poster[i].poster.length; u++){
+                if(fullData.poster[i].poster[u][1] == id){
+                    genID();
+                }
+            }
+        }
+        return id;
+    }
+
+    function slet(){
+        if(type == "løb"){
+            fullData.poster.splice(index, 1);
+            postData("løb", "0");
+            loadEvent();
+            sendData();
+        }else{
+            var postIndex = index.split(",");
+            fullData.poster[postIndex[0]].poster.splice(postIndex[1], 1);
+            postData("post", postIndex[0] + ",0");
+            loadEvent();
+        }
+    }
+</script>
