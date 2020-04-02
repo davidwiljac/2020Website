@@ -42,14 +42,14 @@
                 <option>Senior/Rover</option>
             </select>
             <select id="day" style="display: inherit" onchange="changeDay()">
-                <option>dag 1</option>
-                <option>dag 2</option>
-                <option>dag 3</option>
-                <option>dag 4</option>
-                <option>dag 5</option>
-                <option>dag 6</option>
-                <option>dag 7</option>
-                <option>dag 8</option>
+                <option>Lørdag</option>
+                <option>Søndag</option>
+                <option>Mandag</option>
+                <option>Tirsdag</option>
+                <option>Onsdag</option>
+                <option>Torsdag</option>
+                <option>Fredag</option>
+                <option>Lørdag</option>
             </select>
             <div style="display: inline-block; float: left">
                 <button style="float: left;" onclick="setState(1)">Lav programpunkter</button>
@@ -124,25 +124,25 @@
     </body>
 
     <script>
+        var fullProgram = [];
         var program = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]];
         var state;
-        var mouseDown = 0;
+        var mouseDown = false;
         var colIndex;
         var col = ["#ff0000", "#fa8072", "#ffd700", "#ffa500", "#ffff00", "#F0E68C", "#008000", "#00FF00", "#00FFFF", "#40E0D0", "#0000FF", "#000080", "#FFC0CB", "#808080", "#FFF8DC"];
 
         var day = 0;
         var unitIndex = 0;
         document.body.onmousedown = function() { 
-            ++mouseDown;
+            mouseDown = true;
         }
         document.body.onmouseup = function() {
-            --mouseDown;
+            mouseDown = false;
         }
 
         function setup(){
             document.getElementById("day").selectedIndex = 0;
             document.getElementById("unit").selectedIndex = 0;
-            getData();
             for(var i = 0; i < 35; i++){
                 var tidsbox = document.createElement("div");
                 tidsbox.className = "tidsbox";
@@ -150,6 +150,7 @@
                 tidsbox.addEventListener("mouseenter",click);
                 tidsbox.addEventListener("mousedown", firstClick);
                 tidsbox.addEventListener("click",rediger);
+                /*
                 if(program[i][0] != undefined){
                     if(i == 0){
                         tidsbox.innerHTML = program[0][0];
@@ -159,13 +160,14 @@
                     }
                 }
                 tidsbox.style.backgroundColor = col[program[i][colIndex]];
-
+*/
                 document.getElementById("tidsplan").appendChild(tidsbox);
             }
+            getData();
         }
 
         function update(){
-            sendData();
+            program = fullProgram[day][unitIndex];
             for(var i = 0; i < 35; i++){
                 var tidsbox = document.getElementById(i);
 
@@ -189,6 +191,7 @@
                 }
                 tidsbox.style.backgroundColor = col[program[i][1]];
             }
+            sendData();
         }
 
         var blokke= [];
@@ -262,7 +265,6 @@
         function slet(event){
             program[event.target.id] = [];
             event.target.innerHTML = "";
-            console.log(program)
             update();
         }
 
@@ -328,12 +330,12 @@
 
         function changeDay(){
             day = document.getElementById("day").selectedIndex;
-            getData();
+            update();
         }
 
         function changeUnit(){
             unitIndex = document.getElementById("unit").selectedIndex;
-            getData();
+            update();
         }
 
         var fullData;
@@ -344,7 +346,7 @@
             db.test.find(query, hints, function(err, res){
                 if (!err){
                     fullData = res[0];
-                    program = fullData.program[day][unitIndex];
+                    fullProgram = fullData.program;
                     update();
                 }
             });
