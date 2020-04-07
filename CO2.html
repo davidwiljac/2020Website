@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link type="text/css" rel="stylesheet" href="navigation.css">
+
+        <script src="navigation.js"></script>
+        <script src="https://infomation-93c5.restdb.io/rest/_jsapi.js"></script>
+        <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+
+        <style>
+            .collapsible {
+                background-color: #777;
+                color: white;
+                cursor: pointer;
+                padding: 18px;
+                width: 100%;
+                border: none;
+                text-align: left;
+                outline: none;
+                font-size: 15px;
+            }
+
+            .active, .collapsible:hover {
+                background-color: #555;
+            }
+
+            .content {
+                padding: 0 18px;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.2s ease-out;
+                background-color: #f1f1f1;
+            }
+        </style>
+    </head>
+
+    <body onload="getData()">
+        <div id="nav">
+            <div class="icon-bar">
+                <a onclick="toggleNav()"> --- </a>
+            </div>
+            <div id="side-bar" class="sidenav">
+                <a href="løb.html">Løb og poster</a>
+                <a href="index.html">Tidsplan</a>
+                <a href="verdensmaal.html">Verdensmål</a>
+                <a href="CO2.html">Point</a>
+            </div>
+        </div>
+        <div id="main">
+            <button class="collapsible">De nye elge</button>
+            <div class="content">
+                <h1>CO2</h1>
+                <table>
+                    <tr>
+                        <th>Affalds sortering</th>
+                        <th>2</th>
+                        <th><button>Ændre</button></th>
+                    </tr>
+                    <tr style="text-indent: 1em"><th style="font-weight: 500"><input type="image" src="cross.png" style="height: 23px" onclick="removeCO2Point(1,2,3)"/></th></tr>
+                    <tr style="text-indent: 1em"><th style="font-weight: 500">2</th></tr>
+                    <tr style="text-indent: 1em"><th style="font-weight: 500">2</th></tr>
+                    <tr style="text-indent: 1em"><th style="font-weight: 500">2</th></tr>
+                    <tr style="text-indent: 1em"><th style="font-weight: 500">2</th></tr>
+                    <tr style="text-indent: 1em"><th style="font-weight: 500">2</th></tr>
+                    <tr>
+                        <th>Alternative metoder</th>
+                        <th>2</th>
+                        <th><button>Ændre</button></th>
+
+                    </tr>
+                    <tr>
+                        <th>Anstændige jobs</th>
+                        <th>2</th>
+                        <th><button>Ændre</button></th>
+                    </tr>
+                    <tr>
+                        <th>Brænde</th>
+                        <th>2</th>
+                        <th><button>Ændre</button></th>
+                    </tr>
+                    <tr>
+                        <th>Foropgave</th>
+                        <th>2</th>
+                        <th><button>Ændre</button></th>
+                    </tr>
+                    <tr>
+                        <th>Mad</th>
+                        <th>2</th>
+                        <th><button>Ændre</button></th>
+                    </tr>
+                    <tr>
+                        <th>Opladning</th>
+                        <th>2</th>
+                        <th><button>Ændre</button></th>
+                    </tr>
+                    <tr>
+                        <th>Transportmuligheder</th>
+                        <th>2</th>
+                        <th><button>Ændre</button></th>
+                    </tr>
+                </table>
+                <h1>Andre løb</h1>
+                <h2>Hungergames</h2>
+                <table>
+                    <tr>
+                        <th>Noget</th>
+                        <th>2</th>
+                        <th><button>Ændre</button></th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </body>
+
+    <script>
+        var fullData;
+
+        function createColls(){
+            var coll = document.getElementsByClassName("collapsible");
+            var i;
+
+            for (i = 0; i < coll.length; i++) {
+                coll[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    var content = this.nextElementSibling;
+                    if (content.style.maxHeight){
+                        content.style.maxHeight = null;
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    } 
+                });
+            }
+        }
+
+        function getData(){
+            var db = new restdb("5cf540711cdaca4633876cd3");
+            var query = {}; // get all records
+            var hints = {"$max": 10, "$orderby": {"_id": -1}}; // top ten, sort by creation id in descending order
+            db.test.find(query, hints, function(err, res){
+                if (!err){
+                    fullData = res[0];
+                    addTeams();
+                    createColls();
+                }
+            });
+        }
+
+        function sendData(){
+            // Form fields, see IDs above
+            const xhr = new XMLHttpRequest()
+            xhr.open('POST', 'https://infomation-93c5.restdb.io/rest/test/5cf55c981efbe954000031db');
+            xhr.setRequestHeader('Content-type', 'application/json');
+            xhr.setRequestHeader("x-apikey", "5cf540711cdaca4633876cd3");
+            xhr.send(JSON.stringify(fullData)) // Make sure to stringify
+        }
+
+        function addTeams(){
+            var main = document.getElementById("main");
+            main.innerHTML = "";
+            for(var i = 0; i < fullData.hold.length; i++){
+                var collapsible = document.createElement("button");
+                collapsible.setAttribute("class", "collapsible");
+                collapsible.innerHTML = fullData.hold[i].name;
+                var content = document.createElement("div");
+                content.setAttribute("class","content");
+                main.appendChild(collapsible);
+                main.appendChild(content);
+                addCO2(content,i);
+                addOther(content, i);
+            }
+        }
+
+        var CO2Poster = ["Affaldssortering", "Alternative metoder", "Anstændige jobs", "Brænde", "Foropgave", "Mad", "Opladning", "Transport metode"];
+        function addCO2(content,i){
+            content.innerHTML += "<h1>CO2</h1>";
+            var table = document.createElement("table");
+            for(var u = 0; u < CO2Poster.length; u++){
+                var tr = document.createElement("tr");
+                tr.innerHTML = "<th>"+CO2Poster[u]+"</th>";
+                tr.innerHTML += "<th>"+fullData.hold[i].CO2[u] + " point </th>";
+                tr.innerHTML += "<th><button onclick=addCO2Point(this)> Giv point </button></th>";
+                table.appendChild(tr);
+                addContributers(table, i, u);
+            }
+            content.appendChild(table);
+        }
+
+        function addContributers(table, i, u){
+            for(var j = 0; j < fullData.hold[i].CO2Hist.length; j++){
+                if(CO2Poster[u] == fullData.hold[i].CO2Hist[j][0]){
+                    var tr = document.createElement("tr");
+                    tr.innerHTML += "<th style=\"font-weight: 500\">" + fullData.hold[i].CO2Hist[j][0] + "," + fullData.hold[i].CO2Hist[j][1] + "," + fullData.hold[i].CO2Hist[j][2];
+
+                    var th = document.createElement("th");
+                    var input = document.createElement("input");
+                    input.setAttribute("type", "image");
+                    input.setAttribute("src", "cross.png");
+                    input.setAttribute("height", "23px");
+                    input.setAttribute("id", i+","+u+","+j)
+                    input.setAttribute("onclick", "removeCO2Point(this.id)");
+
+                    th.appendChild(input);
+                    tr.appendChild(th);
+                    table.appendChild(tr);
+                }
+            }
+            table.innerHTML += "<br>";
+        }
+
+        var points = [];
+        function addOther(content, i){
+            var headline = document.createElement("h1");
+            headline.innerHTML = "Andre løb";
+            points = [];
+            content.appendChild(headline);
+            for(var u = 0; u < fullData.poster.length; u++){
+                var table = document.createElement("table");
+                var subHeadline = document.createElement("h2");
+
+                points.push(0);
+                addPost(table, i, u);
+
+                subHeadline.innerHTML = fullData.poster[u].name;
+                subHeadline.innerHTML += ", " + points[u] + "point";
+                subHeadline.setAttribute("style", "clear: both; float: left");
+                content.appendChild(subHeadline);
+
+                var button = document.createElement("button");
+                button.innerHTML = "Giv point";
+                button.setAttribute("style", "margin: 2em");
+                button.setAttribute("onclick", "addPoint(this)");
+                button.setAttribute("id", u);
+                content.appendChild(button);
+
+                content.appendChild(table);
+            }
+        }
+
+        function addPost(table, i, u){
+            for(var j = 0; j < fullData.hold[i].historik.length; j++){
+                if(fullData.hold[i].historik[j][0].includes(fullData.poster[u].name)){
+                    var tr = document.createElement("tr");
+                    tr.innerHTML += "<th>"+fullData.hold[i].historik[j][0]+ ", " + fullData.hold[i].historik[j][1]+" point</th>";
+                    points[u] += fullData.hold[i].historik[j][1];
+
+                    var th = document.createElement("th");
+                    var input = document.createElement("input");
+                    input.setAttribute("type", "image");
+                    input.setAttribute("src", "cross.png");
+                    input.setAttribute("height", "23px");
+                    input.setAttribute("id", i+","+j)
+                    input.setAttribute("onclick", "removePoint(this.id)");
+                    th.appendChild(input);
+                    tr.appendChild(th);
+                    table.appendChild(tr);
+                }
+            }
+        }
+
+        function findTeam(name){
+            for(var i = 0; i < fullData.hold.length; i++){
+                if(fullData.hold[i].name == name){
+                    return(i);
+                }
+            }
+        }
+
+        function removeCO2Point(params){
+            var indexes = params.split(",");
+            fullData.hold[indexes[0]].CO2[indexes[1]] -= fullData.hold[indexes[0]].CO2Hist[indexes[2]][2];
+            fullData.hold[indexes[0]].CO2Hist.splice(indexes[2],1);
+            var element = document.getElementById(params);
+            element.parentNode.parentNode.parentNode.firstChild.children[1].innerHTML = fullData.hold[indexes[0]].CO2[indexes[1]] + "point";
+            element.parentNode.parentNode.parentNode.removeChild(element.parentElement.parentElement);
+            addTeams();
+            createColls();
+            sendData();
+        }
+
+        function addCO2Point(ele){
+            var index = [].slice.call(ele.parentNode.parentNode.parentNode.parentNode.tBodies).indexOf(ele.parentNode.parentNode.parentNode);
+            var name = ele.parentNode.parentNode.parentNode.parentNode.parentNode.previousSibling.innerHTML
+
+            var points = prompt("Hvor mange point skal holdet have?");
+            fullData.hold[findTeam(name)].CO2Hist.push([CO2Poster[index], "ADMIN", points]);
+            fullData.hold[findTeam(name)].CO2[index] += parseInt(points);
+            addTeams();
+            createColls();
+            sendData();
+        }
+
+        function addPoint(ele){
+            var index = findTeam(ele.parentNode.previousSibling.innerHTML);
+            var point = prompt("Hvor mange point skal holdet have?");
+            fullData.hold[index].historik.push([ele.previousSibling.innerHTML.split(",")[0] + " ADMIN", parseInt(point)]);
+            addTeams();
+            createColls();
+            sendData();
+        }
+        
+        function removePoint(params){
+            var indexes = params.split(",");
+            fullData.hold[indexes[0]].historik.splice(indexes[1],1);
+            addTeams();
+            createColls();
+            sendData();
+        }
+    </script>
