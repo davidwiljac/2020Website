@@ -51,12 +51,16 @@
                 <option>Torsdag</option>
                 <option>Fredag</option>
                 <option>Lørdag</option>
-            </select>
+            </select>  
             <div style="display: inline-block; float: left">
                 <button style="float: left;" onclick="setState(1)">Lav programpunkter</button>
                 <button style="float: left;" onclick="setState(2)">Slet programpunkter</button>
                 <button style="float: left;" onclick="setState(3)">Rediger programpunkter</button>
             </div>
+            <input type="checkbox" id="commonDays" value="days">
+            <label for="commonDays">Ens for alle dage?</label>
+            <input type="checkbox" id="commonUnits" value="units">
+            <label for="commonUnits" style="clear: both">Ens for alle enheder?</label>
             <div style="display: inline-block; float: left; clear: both; margin-right: 10px">
                 <div class="tidsbox">6:00</div>
                 <div class="tidsbox">6:30</div>
@@ -173,15 +177,25 @@
                 var tidsbox = document.getElementById(i);
 
                 try {
+                    var suffix = "";
+                    if(program[i][2] == "days"){
+                        suffix = " | fælles for alle dage " + document.getElementById("unit").options[unitIndex].value;
+                    }
+                    else if(program[i][2] == "units"){
+                        suffix = " | fælles for alle enheder " + document.getElementById("day").options[day].value;
+                    }else if(program[i][2] == "all"){
+                        suffix = " | fælles for alle dage og enheder";
+                    }
+
                     if(i == 0 && program[i][0] == undefined){
                         tidsbox.innerHTML = "";
                         tidsbox.style.backgroundColor = "";   
                     }
                     else if(i == 0 && program[i][0] != undefined){
-                        tidsbox.innerHTML = program[0][0];
+                        tidsbox.innerHTML = program[0][0] + suffix;
                         tidsbox.style.backgroundColor = col[program[0][1]];
                     }else if((program[i][0] != program[i-1][0] || program[i][1] != program[i-1][1]) && program[i][0] != undefined){
-                        tidsbox.innerHTML = program[i][0];
+                        tidsbox.innerHTML = program[i][0] + suffix;
                         tidsbox.style.backgroundColor = col[program[i][1]];
                     }else{
                         tidsbox.innerHTML = "";
@@ -254,18 +268,50 @@
             }
         }
 
-        function lav(event){
-            if(program[event.target.id].length == 0){
+        function lav(event){ 
+            var commonDaysVal = document.getElementById("commonDays").checked;
+            var commonUnitsVal = document.getElementById("commonUnits").checked;
+            if(!commonDaysVal && !commonUnitsVal){
                 event.target.style.backgroundColor = col[colIndex];
                 program[event.target.id] = ["Nyt programpunkt", colIndex];
+            }else if(commonDaysVal && !commonUnitsVal){
+                for(var i = 0; i < fullProgram.length; i++){
+                    fullProgram[i][unitIndex][event.target.id] = ["Nyt programpunkt", colIndex, "days"];
+                }
+            }else if(!commonDaysVal && commonUnitsVal){
+                for(var i = 0; i < fullProgram[0].length; i++){
+                    fullProgram[day][i][event.target.id] = ["Nyt programpunkt", colIndex, "units"];
+                }
+            }else{
+                for(var i = 0; i < fullProgram.length; i++){
+                    for(var u = 0; u < fullProgram[0].length; u++){
+                        fullProgram[i][u][event.target.id] = ["Nyt programpunkt", colIndex, "all"];
+                    }
+                }
             }
-            program[event.target.id][1] = colIndex;
             update();
         }
 
         function slet(event){
-            program[event.target.id] = [];
-            event.target.innerHTML = "";
+            var commonDaysVal = document.getElementById("commonDays").checked;
+            var commonUnitsVal = document.getElementById("commonUnits").checked;
+            if(!commonDaysVal && !commonUnitsVal){
+                program[event.target.id] = [];
+            }else if(commonDaysVal && !commonUnitsVal){
+                for(var i = 0; i < fullProgram.length; i++){
+                    fullProgram[i][unitIndex][event.target.id] = [];
+                }
+            }else if(!commonDaysVal && commonUnitsVal){
+                for(var i = 0; i < fullProgram[0].length; i++){
+                    fullProgram[day][i][event.target.id] = [];
+                }
+            }else if(commonDaysVal && commonUnitsVal){
+                for(var i = 0 ; i < fullProgram.length; i++){
+                    for(var u = 0; u < fullProgram[0].length; u++){
+                        fullProgram[i][u][event.target.id] = [];
+                    }
+                }
+            }
             update();
         }
 
@@ -308,15 +354,53 @@
         document.getElementById("navn").addEventListener("change", changeName);
         function changeName(){
             for(var i = selBlok[1]; i < selBlok[2]; i++){
-                program[i][0] = document.getElementById("navn").value;
-                update();
+                if(program[i][2] == undefined){
+                    program[i][0] = document.getElementById("navn").value;
+                }else if(program[i][2] == "days"){
+                    for(var u = 0; u < fullProgram.length; u++){
+                        if(fullProgram[u][unitIndex][i][2] == "days")
+                            fullProgram[u][unitIndex][i][0] = document.getElementById("navn").value;
+                    }
+                }else if(program[i][2] == "units"){
+                    for(var u = 0; u < fullProgram[0].length; u++){
+                        if(fullProgram[day][u][i][2] == "units")
+                            fullProgram[day][u][i][0] = document.getElementById("navn").value;
+                    }
+                }else if(program[i][2] == "all"){
+                    for(var u = 0; u < fullProgram.length; u++){
+                        for(var w = 0; w < fullProgram[0].length; w++){
+                            if(fullProgram[u][w][i][2] == "all")
+                                fullProgram[u][w][i][0] = document.getElementById("navn").value;
+                        }
+                    }
+                }
             }
+            update();
         }
 
         document.getElementById("farve").addEventListener("change", changeCol);
         function changeCol(){
             for(var i = selBlok[1]; i < selBlok[2]; i++){
-                program[i][1] = document.getElementById("farve").selectedIndex;
+                if(program[i][2] == undefined){
+                    program[i][1] = document.getElementById("farve").selectedIndex;
+                }else if(program[i][2] == "days"){
+                    for(var u = 0; u < fullProgram.length; u++){
+                        if(fullProgram[u][unitIndex][i][2] == "days")
+                            fullProgram[u][unitIndex][i][1] = document.getElementById("farve").selectedIndex;
+                    }
+                }else if(program[i][2] == "units"){
+                    for(var u = 0; u < fullProgram[0].length; u++){
+                        if(fullProgram[day][u][i][2] == "units")
+                            fullProgram[day][u][i][1] = document.getElementById("farve").selectedIndex;
+                    }
+                }else if(program[i][2] == "all"){
+                    for(var u = 0; u < fullProgram.length; u++){
+                        for(var w = 0; w < fullProgram[0].length; w++){
+                            if(fullProgram[u][w][i][2] == "all")
+                                fullProgram[u][w][i][1] = document.getElementById("farve").selectedIndex;
+                        }
+                    }
+                }
             }
             setState(3);
             update();

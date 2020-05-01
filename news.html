@@ -1,0 +1,255 @@
+<!DOCTYPE HTML>
+<head>
+    <!-- META -->
+    <meta charset="utf-8">
+    <!-- CSS -->
+    <link type="text/css" rel="stylesheet" href="css/all.min.css">
+    <link type="text/css" rel="stylesheet" href="navigation.css">
+
+    <script src="navigation.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+    <script src="https://infomation-93c5.restdb.io/rest/_jsapi.js"></script>
+    <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+
+    <style>
+        button{
+            width: 100%;
+            height: 2em;
+        }
+
+        textarea{
+            width: 100%;
+            resize: none;
+        }
+        .overskrift{
+            height: 2em;
+            font-size: 1.5em;
+        }
+
+        .tekst{
+            height: 15em;
+        }
+
+
+    </style>
+
+</head>
+<body onload="getData()">
+    <div id="nav">
+        <div class="icon-bar">
+            <a onclick="toggleNav()"> --- </a>
+        </div>
+        <div id="side-bar" class="sidenav">
+            <a href="løb.html">Løb og poster</a>
+            <a href="index.html">Tidsplan</a>
+            <a href="verdensmaal.html">Verdensmål</a>
+            <a href="CO2.html">Point</a>
+        </div>
+    </div>
+    <div id="main">
+        <textarea class="overskrift" placeholder="Overskrift" id="overskrift"></textarea>
+        <textarea class="tekst" placeholder="Tekst" id="tekst"></textarea>
+        <input type="file" id="fil">
+        <button onclick="bekræft()"> bekræft</button>
+        <hr>
+
+        <div id="news"></div>
+    </div>    
+</body>
+
+<script>
+    var fullData;
+    getData();
+    function getData(){
+        var db = new restdb("5cf540711cdaca4633876cd3");
+        var query = {}; // get all records
+        var hints = {"$max": 10, "$orderby": {"_id": -1}}; // top ten, sort by creation id in descending order
+        db.test.find(query, hints, function(err, res){
+            if (!err){
+                fullData = res[0];
+                setup();
+            }
+        });
+    }
+
+    function sendData(){
+        if(fullData != undefined){
+            // Form fields, see IDs above
+            const xhr = new XMLHttpRequest()
+            xhr.open('POST', 'https://infomation-93c5.restdb.io/rest/test/5cf55c981efbe954000031db');
+            xhr.setRequestHeader('Content-type', 'application/json');
+            xhr.setRequestHeader("x-apikey", "5cf540711cdaca4633876cd3");
+            xhr.send(JSON.stringify(fullData)) // Make sure to stringify
+        }
+    }
+
+    var newImgID;
+    function bekræft(){
+        var nyhed = {"overskrift": document.getElementById("overskrift").value, "text": document.getElementById("tekst").value };
+        fullData.nyheder.push(nyhed);
+
+        var apikey = "5cf540711cdaca4633876cd3";
+        $.ajaxPrefilter(function( options ) {
+            if ( !options.beforeSend) {
+                options.beforeSend = function (xhr) { 
+                    xhr.setRequestHeader('x-apikey', apikey);
+                }
+            }
+        });
+
+        var formData = new FormData();
+        var files = $('#fil')[0].files; 
+        // Loop through each of the selected files.
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var name = files[0].name;
+            // Add the file to the request.
+            formData.append('myfile', file, file.name);
+        }
+
+        if(files.length != 0){
+            var id;
+            $.ajax({
+                "data": formData,
+                "url": "https://infomation-93c5.restdb.io/media",
+                type: "POST",
+                processData: false,
+                contentType: false,
+            }).done(function (response) {
+                id = response.ids[0];
+                newImgID = id;
+                fullData.nyhedbilleder.push(id);
+                sendData();
+                setup();
+            });
+        }else{
+            fullData.nyhedbilleder.push("none");
+            sendData();
+            setup();
+        }
+
+        document.getElementById("overskrift").value = "";
+        document.getElementById("tekst").value = "";
+        document.getElementById("fil").value = "";
+    }
+
+    function setup(){
+        var newbox = document.getElementById("news");
+        newbox.innerHTML = "";
+        for(var i = fullData.nyheder.length-1; i >= 0; i--){
+            var header = document.createElement("h3");
+            var text = document.createElement("p");
+            var img = document.createElement("img");
+
+            header.innerHTML = fullData.nyheder[i].overskrift;
+            text.innerHTML = fullData.nyheder[i].text;
+            text.className = "news"
+            text.id = fullData.nyheder.length-1-i;
+
+            newbox.appendChild(header);
+            newbox.appendChild(text);
+            newbox.appendChild(img);
+            newbox.appendChild(document.createElement("hr"));
+        }
+
+        var btns = document.getElementsByClassName("news");
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].addEventListener("click", function() {
+                var textAreaOverskrift = document.createElement("textarea");
+                var textAreaTekst = document.createElement("textarea");
+                textAreaOverskrift.value = this.previousElementSibling.innerHTML;
+                textAreaTekst.value  = this.innerHTML;
+                textAreaTekst.id = this.id;
+
+                textAreaOverskrift.style.fontSize = "1.5em";
+                textAreaTekst.style.height = "";
+                textAreaTekst.style.height = this.scrollHeight + "px"
+
+                var button = document.createElement("button");
+                button.innerHTML = "Gem ændringer";
+                button.addEventListener("click", function(){
+                    gemÆndring(textAreaTekst);
+                });
+
+                var delButton = document.createElement("button");
+                delButton.innerHTML = "Slet";
+                delButton.addEventListener("click", function(){
+                    slet(textAreaTekst);
+                })
+
+                var file = document.createElement("input");
+                file.type = "file";
+                $(this).replaceWith(textAreaTekst);
+                $(textAreaTekst.previousElementSibling).replaceWith(textAreaOverskrift);
+                $(button).insertAfter(textAreaTekst);
+                $(file).insertBefore(button);
+                $(delButton).insertAfter(button)
+            });
+        }
+
+        var imgs = document.getElementsByTagName("img");
+        for(var i = imgs.length-1; i >= 0; i--){
+            imgs.item((imgs.length-1)-i).setAttribute("alt", "Billedet kunne ikke findes");
+            if(fullData.nyhedbilleder[i] != undefined && fullData.nyhedbilleder[i] != "none"){
+                imgs.item((imgs.length-1)-i).setAttribute("src", "https://infomation-93c5.restdb.io/media/"+fullData.nyhedbilleder[i]);
+            }else if(fullData.nyhedbilleder[i] == "none"){
+                imgs.item((imgs.length-1)-i).setAttribute("alt", "");
+            }else{
+                imgs.item((imgs.length-1)-i).setAttribute("src", "https://infomation-93c5.restdb.io/media/"+newImgID);
+            }
+        }
+    }
+
+    function gemÆndring(ele){
+        var tekstBoks = document.getElementById(ele.id);
+        var overskrift = tekstBoks.previousElementSibling.value;
+        var tekst = tekstBoks.value;
+        fullData.nyheder[fullData.nyheder.length-1-ele.id] = {"overskrift": overskrift, "text": tekst};
+        var apikey = "5cf540711cdaca4633876cd3";
+        $.ajaxPrefilter(function( options ) {
+            if ( !options.beforeSend) {
+                options.beforeSend = function (xhr) { 
+                    xhr.setRequestHeader('x-apikey', apikey);
+                }
+            }
+        });
+
+        var formData = new FormData();
+        var files = $(tekstBoks.nextElementSibling)[0].files; 
+        // Loop through each of the selected files.
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var name = files[0].name;
+            // Add the file to the request.
+            formData.append('myfile', file, file.name);
+        }
+
+        $.ajax({
+            "data": formData,
+            "url": "https://infomation-93c5.restdb.io/media",
+            type: "POST",
+            processData: false,
+            contentType: false,
+        }).done(function (response) {
+            var id = response.ids[0];
+            fullData.nyhedbilleder[fullData.nyhedbilleder.length-1-ele.id] = id;
+            sendData();
+            setup();
+            return;
+        });
+        sendData();
+        setup();
+    }
+
+    function slet(ele){
+        var slet = confirm("Er du sikker på at du vil slette " + ele.previousElementSibling.value);
+        if(slet){
+            var id = ele.id;
+            var length = fullData.nyheder.length-1;
+            fullData.nyheder.splice(length-id,1);
+            fullData.nyhedbilleder.splice(length-id,1);
+            sendData();
+            setup();
+        }
+    }
+</script>

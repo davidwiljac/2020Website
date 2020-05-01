@@ -33,6 +33,45 @@
                 transition: max-height 0.2s ease-out;
                 background-color: #f1f1f1;
             }
+
+            /* The Modal (background) */
+            .modal {
+                display: none; /* Hidden by default */
+                position: fixed; /* Stay in place */
+                z-index: 1; /* Sit on top */
+                padding-top: 100px; /* Location of the box */
+                left: 0;
+                top: 0;
+                width: 100%; /* Full width */
+                height: 100%; /* Full height */
+                overflow: auto; /* Enable scroll if needed */
+                background-color: rgb(0,0,0); /* Fallback color */
+                background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            }
+
+            /* Modal Content */
+            .modal-content {
+                background-color: #fefefe;
+                margin: auto;
+                padding: 20px;
+                border: 1px solid #888;
+                width: 80%;
+            }
+
+            /* The Close Button */
+            .close {
+                color: #aaaaaa;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+            }
+
+            .close:hover,
+            .close:focus {
+                color: #000;
+                text-decoration: none;
+                cursor: pointer;
+            }
         </style>
     </head>
 
@@ -50,11 +89,160 @@
         </div>
         <div id="main">
         </div>
+        <!-- The Modal -->
+        <div id="modal1" class="modal">
+            <!-- Modal content -->
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <p>Vælg parametrene for den nye gruppe</p>
+                <p><b>Navn</b></p>
+                <input type=text id="nameSel">
+                <br>
+                <p><b>Enhed</b></p>
+                <select id="unitSel">
+                    <option> Bæver </option>
+                    <option> Ulve </option>
+                    <option> Junior </option>
+                    <option> Storspejder </option>
+                    <option> Senior/Rover </option>
+                </select>
+                <p><b>Gruppe</b></p>
+                <select id="groupSel">
+                </select>
+                <input type="text" id="newGroup" placeholder="Gruppe navn" style="visibility: hidden">
+                <br>
+                <button style="height: 5em; float: right; margin-right: 0.2em" onclick="confirmAddTeam()">Bekræft</button>
+                <br>
+                <br>
+                <br>
+            </div>
+        </div>
+
+        <div id="modal2" class="modal">
+            <!-- Modal content -->
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <p>Hvilket hold skal slettes?</p>
+                <select id="holdDelSel">
+                </select>
+                <br>
+                <button style="height: 5em; float: right; margin-right: 0.2em" onclick="confirmRemoveTeam()">Bekræft</button>
+                <br>
+                <br>
+                <br>
+            </div>
+        </div>
     </body>
 
+    <script> //modal script
+        function modal1Setup(){
+            var modal = document.getElementById("modal1");
+            var sel = document.getElementById("groupSel");
+            sel.setAttribute("onchange", "onGroupSel()");
+            sel.innerHTML = "";
+            for(var i = 0; i < groups.length; i++){
+                var option = document.createElement("option");
+                option.innerHTML = groups[i];
+                sel.appendChild(option);
+            }
+            var option = document.createElement("option");
+            option.innerHTML = "Ny gruppe";
+            sel.appendChild(option);
+
+            var span = document.getElementsByClassName("close")[0];
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+
+            // When the user clicks anywhere outside of the modal, close it
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        }
+
+        function onGroupSel(){
+            var sel = document.getElementById("groupSel");
+            var val =sel.value;
+            if(val == "Ny gruppe"){
+                document.getElementById("newGroup").style.visibility = "visible";
+            }else{
+                document.getElementById("newGroup").style.visibility = "hidden";
+            }
+        }
+
+        function confirmAddTeam(){
+            var name = document.getElementById("nameSel").value;
+            var unit = document.getElementById("unitSel").value;
+            if(document.getElementById("groupSel").value == "Ny gruppe"){
+                var group = document.getElementById("newGroup").value;
+            }else{
+                var group = document.getElementById("groupSel").value;
+            }
+            var newTeam = {"name": name, 
+                           "score": 0,
+                           "historik": [],
+                           "CO2": [0,0,0,0,0,0,0,0],
+                           "CO2Hist": [],
+                           "enhed": unit,
+                           "gruppe": group
+                          };
+            fullData.hold.push(newTeam);
+            sendData();
+            getData();
+            document.getElementById("modal1").style.display = "none";
+        }
+
+
+        function modal2Setup(){
+            var modal = document.getElementById("modal2");
+            var span = document.getElementsByClassName("close")[1];
+
+            var sel = document.getElementById("holdDelSel");
+            sel.innerHTML = "";
+            var groups = [];
+            for(var i = 0; i < fullData.hold.length; i++){
+                if(!groups.includes(fullData.hold[i].gruppe)){
+                    groups.push(fullData.hold[i].gruppe);
+                }
+            }
+
+            for(var u = 0; u < groups.length; u++){
+                var option = document.createElement("option");
+                option.innerHTML = groups[u];
+                option.disabled = true;
+                sel.appendChild(option);
+                for(var i = 0; i < fullData.hold.length; i++){
+                    if(fullData.hold[i].gruppe == groups[u]){
+                        var option = document.createElement("option");
+                        option.innerHTML = fullData.hold[i].name;
+                        sel.appendChild(option);
+                    }
+                }
+            }
+
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+        }
+
+        function confirmRemoveTeam(){
+            var teamToDel = document.getElementById("holdDelSel").value;
+            var conf = confirm("Er du sikker på at du vil slette " + teamToDel);
+            if(conf){
+                var teamIndex = findTeam(teamToDel);
+                fullData.hold.splice(teamIndex,1);
+                sendData();
+                getData();
+                document.getElementById("modal2").style.display = "none";
+            }
+        }
+
+    </script>
     <script>
         var fullData;
-
+        var groups;
         function createColls(){
             var coll = document.getElementsByClassName("collapsible");
             var i;
@@ -79,8 +267,9 @@
             db.test.find(query, hints, function(err, res){
                 if (!err){
                     fullData = res[0];
-                    addTeams();
-                    createColls();
+                    addGroups();
+                    modal1Setup();
+                    modal2Setup();
                 }
             });
         }
@@ -94,34 +283,70 @@
             xhr.send(JSON.stringify(fullData)) // Make sure to stringify
         }
 
-        function addTeams(){
+        function addGroups(){ 
             var main = document.getElementById("main");
             main.innerHTML = "";
+            var addButton = document.createElement("button");
+            addButton.innerHTML = "Tilføj hold";
+            addButton.setAttribute("onclick", "addNewTeam()");
+
+            var removeButton = document.createElement("button");
+            removeButton.innerHTML = "Slet hold";
+            removeButton.setAttribute("onclick", "removeTeam()");
+
+            main.appendChild(addButton);
+            main.appendChild(removeButton);
+
+            groups = [];
             for(var i = 0; i < fullData.hold.length; i++){
-                var collapsible = document.createElement("button");
-                collapsible.setAttribute("class", "collapsible");
-                collapsible.innerHTML = fullData.hold[i].name;
-                var content = document.createElement("div");
-                content.setAttribute("class","content");
-                main.appendChild(collapsible);
-                main.appendChild(content);
-                addCO2(content,i);
-                addOther(content, i);
+                if(!groups.includes(fullData.hold[i].gruppe)){
+                    groups.push(fullData.hold[i].gruppe);
+                }
             }
+
+            for(var group = 0; group < groups.length; group++){
+                var groupHead = document.createElement("h1");
+                groupHead.innerHTML = groups[group];
+                main.appendChild(groupHead);
+                for(var i = 0; i < fullData.hold.length; i++){
+                    if(fullData.hold[i].gruppe == groups[group]){
+                        addTeams(i);
+                    }
+                }
+            }
+            createColls();
+        }
+
+        function addTeams(i){
+            var collapsible = document.createElement("button");
+            collapsible.setAttribute("class", "collapsible");
+            collapsible.innerHTML = fullData.hold[i].name;
+            var content = document.createElement("div");
+            content.setAttribute("class","content");
+            main.appendChild(collapsible);
+            main.appendChild(content);
+            addCO2(content,i);
+            addOther(content, i);
         }
 
         var CO2Poster = ["Affaldssortering", "Alternative metoder", "Anstændige jobs", "Brænde", "Foropgave", "Mad", "Opladning", "Transport metode"];
         function addCO2(content,i){
-            content.innerHTML += "<h1>CO2</h1>";
+            var CO2Head = document.createElement("h1");
+            CO2Head.id = "CO2Head" + i;
+            var CO2Points = 0;
             var table = document.createElement("table");
             for(var u = 0; u < CO2Poster.length; u++){
                 var tr = document.createElement("tr");
                 tr.innerHTML = "<th>"+CO2Poster[u]+"</th>";
                 tr.innerHTML += "<th>"+fullData.hold[i].CO2[u] + " point </th>";
+                CO2Points += fullData.hold[i].CO2[u];
                 tr.innerHTML += "<th><button onclick=addCO2Point(this)> Giv point </button></th>";
                 table.appendChild(tr);
                 addContributers(table, i, u);
             }
+            content.appendChild(CO2Head);
+            var id = "CO2Head" + i;
+            document.getElementById(id).innerHTML = "CO2: " + CO2Points + " point";
             content.appendChild(table);
         }
 
@@ -150,7 +375,7 @@
         var points = [];
         function addOther(content, i){
             var headline = document.createElement("h1");
-            headline.innerHTML = "Andre løb";
+            headline.innerHTML = "Andre løb: " + fullData.hold[i].score + " point";
             points = [];
             content.appendChild(headline);
             for(var u = 0; u < fullData.poster.length; u++){
@@ -161,7 +386,7 @@
                 addPost(table, i, u);
 
                 subHeadline.innerHTML = fullData.poster[u].name;
-                subHeadline.innerHTML += ", " + points[u] + "point";
+                subHeadline.innerHTML += ", " + points[u] + " point";
                 subHeadline.setAttribute("style", "clear: both; float: left");
                 content.appendChild(subHeadline);
 
@@ -205,15 +430,24 @@
             }
         }
 
+        function addNewTeam(){
+            var modal = document.getElementById("modal1");
+            modal.style.display = "block";
+        }
+
+        function removeTeam(){
+            var modal = document.getElementById("modal2");
+            modal.style.display = "block";
+        }
+
         function removeCO2Point(params){
             var indexes = params.split(",");
             fullData.hold[indexes[0]].CO2[indexes[1]] -= fullData.hold[indexes[0]].CO2Hist[indexes[2]][2];
             fullData.hold[indexes[0]].CO2Hist.splice(indexes[2],1);
             var element = document.getElementById(params);
-            element.parentNode.parentNode.parentNode.firstChild.children[1].innerHTML = fullData.hold[indexes[0]].CO2[indexes[1]] + "point";
+            element.parentNode.parentNode.parentNode.firstChild.children[1].innerHTML = fullData.hold[indexes[0]].CO2[indexes[1]] + " point";
             element.parentNode.parentNode.parentNode.removeChild(element.parentElement.parentElement);
-            addTeams();
-            createColls();
+            addGroups();
             sendData();
         }
 
@@ -224,25 +458,25 @@
             var points = prompt("Hvor mange point skal holdet have?");
             fullData.hold[findTeam(name)].CO2Hist.push([CO2Poster[index], "ADMIN", points]);
             fullData.hold[findTeam(name)].CO2[index] += parseInt(points);
-            addTeams();
-            createColls();
+            addGroups();
             sendData();
         }
 
         function addPoint(ele){
             var index = findTeam(ele.parentNode.previousSibling.innerHTML);
             var point = prompt("Hvor mange point skal holdet have?");
+            fullData.hold[index].score += parseInt(point);
             fullData.hold[index].historik.push([ele.previousSibling.innerHTML.split(",")[0] + " ADMIN", parseInt(point)]);
-            addTeams();
-            createColls();
+            addGroups();
             sendData();
         }
-        
+
         function removePoint(params){
             var indexes = params.split(",");
+            fullData.hold[indexes[0]].score -= parseInt(fullData.hold[indexes[0]].historik[indexes[1]][1]);
+
             fullData.hold[indexes[0]].historik.splice(indexes[1],1);
-            addTeams();
-            createColls();
+            addGroups();
             sendData();
         }
     </script>
