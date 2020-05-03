@@ -17,12 +17,17 @@
                 height: 1.2em;
                 width: 100%;
             }
+            .aktivitetSel{
+                max-width: 20%;
+                width: 200px;
+                overflow: hidden;
+            }
             #tidsplan div:nth-child(odd){background-color: #f2f2f2;}
             #tidsplan div:hover {background-color: #ddd;}
 
         </style>
     </head>
-    <body onload="setup()">
+    <body>
         <div id="nav">
             <div class="icon-bar">
                 <a onclick="toggleNav()"> --- </a>
@@ -124,6 +129,11 @@
 
                     </select>
                 </div>
+                <div style="clear: both">
+                    <p style="float: left; margin-right: 2em; margin-top: auto">(valgfri) Forbundet aktivitet:</p>
+                    <select class="aktivitetSel" style="float: right; margin-top: auto; max-width: 30%; text-overflow: ellipsis" id="aktivitet"></select>
+
+                </div>
             </div>
         </div>
     </body>
@@ -144,6 +154,7 @@
         document.body.onmouseup = function() {
             mouseDown = false;
         }
+        getData();
 
         function setup(){
             document.getElementById("day").selectedIndex = 0;
@@ -155,20 +166,46 @@
                 tidsbox.addEventListener("mouseenter",click);
                 tidsbox.addEventListener("mousedown", firstClick);
                 tidsbox.addEventListener("click",rediger);
-                /*
-                if(program[i][0] != undefined){
-                    if(i == 0){
-                        tidsbox.innerHTML = program[0][0];
-                    }
-                    else if(program[i][0] != program[i-1][0]){
-                        tidsbox.innerHTML = program[i][0];
-                    }
-                }
-                tidsbox.style.backgroundColor = col[program[i][colIndex]];
-*/
                 document.getElementById("tidsplan").appendChild(tidsbox);
             }
-            getData();
+            setupAktivitetSel();
+        }
+
+        var CO2Poster = ["Affaldssortering", "Alternative metoder", "Anstændige jobs", "Brænde", "Foropgave", "Mad", "Opladning", "Transport metode"];
+        function setupAktivitetSel(){
+            var aktivitetSel = document.getElementById("aktivitet");
+
+            var none = document.createElement("option");
+            none.innerHTML = "ingen";
+            aktivitetSel.appendChild(none);
+
+            var CO2OptGrp = document.createElement("optgroup");
+            CO2OptGrp.label = "CO2";
+            for(var i = 0; i < CO2Poster.length; i++){
+                var opt = document.createElement("option");
+                opt.innerHTML = CO2Poster[i];
+                CO2OptGrp.appendChild(opt);
+            }
+            aktivitetSel.appendChild(CO2OptGrp);
+
+            var verdensmål = ["Afskaf fattigdom", "Stop sult", "Sunhed og trivsel", "Kvalitetsuddannelse", "Ligestilling mellem kønnene", "Rent vand og sanitet", "Bæredygtig energi", "Anstændige jobs og økonomisk vækst", "Industri, innovation og infrastruktur", "Mindre ulighed", "Bæredygtige byer og lokalsamfund", "Ansvarligt forbrug og produktion", "Klimaindsats", "Livet i havet", "Livet på land", "Fred, retfærdighed og stærke institutitioner", "Partnerskab for handling"];
+            var verdensmålOptGrp = document.createElement("optgroup");
+            verdensmålOptGrp.label = "Verdensmål";
+            for(var i = 0; i < verdensmål.length; i++){
+                var option = document.createElement("option");
+                option.innerHTML = verdensmål[i];
+                verdensmålOptGrp.appendChild(option);
+            }
+            aktivitetSel.appendChild(verdensmålOptGrp);
+
+            var løbOptGrp = document.createElement("optgroup");
+            løbOptGrp.label = "Løb"; 
+            for(var i = 0; i < fullData.poster.length; i++){
+                var option = document.createElement("option");
+                option.innerHTML = fullData.poster[i].name;
+                løbOptGrp.appendChild(option);
+            }
+            aktivitetSel.appendChild(løbOptGrp);
         }
 
         function update(){
@@ -348,6 +385,16 @@
                 document.getElementById("navn").value = selBlok[0];
                 document.getElementById("farve").selectedIndex = program[selBlok[1]][1];
                 document.getElementById("farve").style.backgroundColor = col[document.getElementById("farve").selectedIndex];
+                document.getElementById("aktivitet").selectedIndex = findAktIndex(program[selBlok[1]][3]);
+            }
+        }
+
+        function findAktIndex(value){
+            var sel = document.getElementById("aktivitet");
+            for(var i = 0; i < sel.length; i++){
+                if(sel.options[i].value == value){
+                    return i;
+                }
             }
         }
 
@@ -406,6 +453,34 @@
             update();
         }
 
+        document.getElementById("aktivitet").addEventListener("change", changeAkt)
+        function changeAkt(){
+            var aktSelVal = document.getElementById("aktivitet").value;
+            for(var i = selBlok[1]; i < selBlok[2]; i++){
+                if(program[i][2] == undefined){
+                    program[i][3] = aktSelVal;
+                }else if(program[i][2] == "days"){
+                    for(var u = 0; u < fullProgram.length; u++){
+                        if(fullProgram[u][unitIndex][i][2] == "days")
+                            fullProgram[u][unitIndex][i][3] = aktSelVal;
+                    }
+                }else if(program[i][2] == "units"){
+                    for(var u = 0; u < fullProgram[0].length; u++){
+                        if(fullProgram[day][u][i][2] == "units")
+                            fullProgram[day][u][i][3] = aktSelVal;
+                    }
+                }else if(program[i][2] == "all"){
+                    for(var u = 0; u < fullProgram.length; u++){
+                        for(var w = 0; w < fullProgram[0].length; w++){
+                            if(fullProgram[u][w][i][2] == "all")
+                                fullProgram[u][w][i][3] = aktSelVal;
+                        }
+                    }
+                }
+            }
+            update();
+        }
+
         function removeBorder(){
             for(var i = 0; i < program.length; i++){
                 document.getElementById(i).style.border = "none";
@@ -416,11 +491,19 @@
         function changeDay(){
             day = document.getElementById("day").selectedIndex;
             update();
+            if(state == "rediger"){
+                removeBorder();
+                setState(3);
+            }
         }
 
         function changeUnit(){
             unitIndex = document.getElementById("unit").selectedIndex;
             update();
+            if(state == "rediger"){
+                removeBorder();
+                setState(3);
+            }
         }
 
         var fullData;
@@ -432,6 +515,7 @@
                 if (!err){
                     fullData = res[0];
                     fullProgram = fullData.program;
+                    setup();
                     update();
                 }
             });
